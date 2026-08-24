@@ -1,0 +1,293 @@
+# Plano — Banco de Dados Python + SQLAlchemy + Alembic
+
+## Objetivo
+
+Implementar no backend Python um fluxo equivalente ao Sequelize:
+
+- Migrations versionadas
+- Seeds
+- Reset completo do banco em desenvolvimento
+- Banco reproduzível para todos os integrantes
+- SQL/migrations baseados no DBML abaixo
+
+---
+
+## Step 1 — Dependências
+
+Instalar:
+
+```bash
+pip install sqlalchemy alembic python-dotenv
+```
+(iremos usar o mysql)
+
+Adicionar tudo ao `requirements.txt`.
+
+---
+
+## Step 2 — Estrutura
+
+Manter a estrutura atual e adicionar:
+
+```text
+backend/
+├── database/
+│   ├── database.py
+│   ├── migrations/
+│   │   └── versions/
+│   └── seeds/
+│       └── seed.py
+├── models/
+├── controllers/
+├── routes/
+├── services/
+├── validators/
+├── helpers/
+├── middlewares/
+├── alembic.ini
+└── server.py
+```
+
+---
+
+## Step 3 — Conexão
+
+Criar `database/database.py` para:
+
+- Ler `DATABASE_URL` do `.env`
+- Criar `engine`
+- Criar `Session`
+- Exportar `Base`
+
+Não usar `Base.metadata.create_all()` para controlar o banco em desenvolvimento.
+
+---
+
+## Step 4 — Alembic
+
+Inicializar:
+
+```bash
+alembic init database/migrations
+```
+
+Configurar o Alembic para:
+
+- Usar a mesma `DATABASE_URL`
+- Importar a `Base.metadata`
+- Detectar os models do projeto
+
+---
+
+## Step 5 — Models
+
+Criar os models SQLAlchemy correspondentes ao DBML:
+
+1. User
+2. Category
+3. Location
+4. ObjectFound
+5. Characteristic
+6. Photo
+7. Pickup
+
+Definir corretamente:
+
+- PK
+- FK
+- Unique
+- Not null
+- Relacionamentos
+
+---
+
+## Step 6 — Migration inicial
+
+Gerar:
+
+```bash
+alembic revision --autogenerate -m "create initial tables"
+```
+
+Revisar a migration manualmente e aplicar:
+
+```bash
+alembic upgrade head
+```
+
+---
+
+## Step 7 — Seeds
+
+Criar:
+
+```text
+database/seeds/
+└── seed.py
+```
+
+Inserir apenas dados necessários para desenvolvimento/teste.
+
+Exemplos:
+
+- Categorias
+- Locais
+- Usuário de teste
+
+Executar:
+
+```bash
+python -m database.seeds.seed
+```
+
+---
+
+## Step 8 — Reset do banco
+
+Criar um comando equivalente ao `db:force:dev` do Sequelize:
+
+```bash
+python manage.py db:reset
+```
+
+Fluxo:
+
+```text
+1. Apagar estrutura do banco de desenvolvimento
+2. Executar todas as migrations
+3. Executar os seeds
+```
+
+Resultado:
+
+```text
+Banco limpo → Migrations → Seeds → Banco pronto
+```
+
+---
+
+## Step 9 — Comandos padronizados
+
+Documentar no README:
+
+```bash
+# aplicar migrations
+alembic upgrade head
+
+# rollback da última migration
+alembic downgrade -1
+
+# reset completo de desenvolvimento
+python manage.py db:reset
+
+# executar seeds
+python -m database.seeds.seed
+```
+
+Regra do time: toda alteração estrutural deve gerar uma nova migration e ser commitada no Git.
+
+Não editar migrations que já foram compartilhadas/aplicadas pelo time; criar uma nova migration.
+
+---
+
+## Step 10 — Validação
+
+Testar do zero:
+
+1. Criar banco vazio
+2. Executar `python manage.py db:reset`
+3. Verificar tabelas
+4. Verificar PK, FK, UNIQUE e NOT NULL
+5. Verificar seeds
+6. Testar em outra máquina/clonagem do projeto
+
+---
+
+# DBML DE REFERÊNCIA
+
+Usar este DBML como referência para gerar/revisar o SQL, models e migrations.
+
+```dbml
+Table user {
+  id_user int [pk, increment]
+  name varchar(150) [not null]
+  cpf varchar(11) [not null, unique]
+  phone varchar(20) [not null]
+  email varchar(150) [not null, unique]
+  rgm varchar(20) [not null, unique]
+}
+
+Table category {
+  id_category int [pk, increment]
+  name varchar(100) [not null, unique]
+}
+
+Table location {
+  id_location int [pk, increment]
+  central_place varchar(100) [not null]
+  description varchar(255) [not null]
+}
+
+Table object_found {
+  id_object int [pk, increment]
+  id_user int [not null]
+  id_category int [not null]
+  id_location int [not null]
+
+  status varchar(30) [not null]
+  found_date date [not null]
+}
+
+Table characteristic {
+  id_characteristic int [pk, increment]
+  id_object int [not null, unique]
+
+  color varchar(50) [not null]
+  brand varchar(100) [not null]
+  description text [not null]
+}
+
+Table photo {
+  id_photo int [pk, increment]
+  id_object int [not null, unique]
+
+  source varchar(500) [not null]
+}
+
+Table pickup {
+  id_pickup int [pk, increment]
+  id_object int [not null, unique]
+
+  name varchar(150) [not null]
+  cpf varchar(11) [not null]
+  rg varchar(20) [not null]
+  rgm varchar(20) [not null]
+  phone varchar(20) [not null]
+
+  person_photo varchar(500) [not null]
+  pickup_date datetime [not null]
+}
+
+// Relationships
+
+Ref: user.id_user < object_found.id_user
+Ref: category.id_category < object_found.id_category
+Ref: location.id_location < object_found.id_location
+Ref: object_found.id_object - characteristic.id_object
+Ref: object_found.id_object - photo.id_object
+Ref: object_found.id_object - pickup.id_object
+```
+
+---
+
+## Resultado esperado
+
+Qualquer integrante deve conseguir executar:
+
+```bash
+git clone <projeto>
+pip install -r requirements.txt
+python manage.py db:reset
+```
+
+e obter a mesma estrutura e os mesmos dados iniciais de desenvolvimento.
