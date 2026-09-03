@@ -15,13 +15,49 @@ depends_on = None
 
 def upgrade() -> None:
     op.create_table(
+        "role",
+        sa.Column("id_role", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("name", sa.String(length=50), nullable=False),
+        sa.PrimaryKeyConstraint("id_role"),
+        sa.UniqueConstraint("name"),
+    )
+    op.bulk_insert(
+        sa.table("role", sa.column("name", sa.String(length=50))),
+        [{"name": "common"}, {"name": "admin"}],
+    )
+    op.create_table(
+        "profile",
+        sa.Column("id_profile", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("name", sa.String(length=50), nullable=False),
+        sa.Column("display_name", sa.String(length=100), nullable=False),
+        sa.PrimaryKeyConstraint("id_profile"),
+        sa.UniqueConstraint("name"),
+    )
+    op.bulk_insert(
+        sa.table(
+            "profile",
+            sa.column("name", sa.String(length=50)),
+            sa.column("display_name", sa.String(length=100)),
+        ),
+        [
+            {"name": "student", "display_name": "Estudante"},
+            {"name": "professor", "display_name": "Professor"},
+            {"name": "staff", "display_name": "Funcionário"},
+        ],
+    )
+    op.create_table(
         "user",
         sa.Column("id_user", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("name", sa.String(length=150), nullable=False),
         sa.Column("cpf", sa.String(length=11), nullable=False),
         sa.Column("phone", sa.String(length=20), nullable=False),
         sa.Column("email", sa.String(length=150), nullable=False),
-        sa.Column("rgm", sa.String(length=20), nullable=False),
+        sa.Column("rgm", sa.String(length=20), nullable=True),
+        sa.Column("password_hash", sa.String(length=255), nullable=False),
+        sa.Column("id_profile", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(["id_profile"], ["profile.id_profile"]),
+        sa.Column("role_id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(["role_id"], ["role.id_role"]),
         sa.PrimaryKeyConstraint("id_user"),
         sa.UniqueConstraint("cpf"),
         sa.UniqueConstraint("email"),
@@ -99,3 +135,5 @@ def downgrade() -> None:
     op.drop_table("location")
     op.drop_table("category")
     op.drop_table("user")
+    op.drop_table("profile")
+    op.drop_table("role")

@@ -12,6 +12,14 @@ py -m pip install -r requirements.txt
 py manage.py db:reset
 ```
 
+Para iniciar o servidor, a conexão com o banco é validada antes da aplicação HTTP subir:
+
+```bash
+py server.py
+```
+
+Se o banco estiver indisponível, o processo informa o erro e termina com código `1`.
+
 Comandos do Alembic disponíveis dentro de `backend/`:
 
 ```bash
