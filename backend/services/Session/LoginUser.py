@@ -4,13 +4,20 @@ from database.database import Session
 from helpers.GenerateToken import generateToken
 from helpers.HashPassword import verifyPassword
 from models import User
-from services.errors import AuthenticationError
+from errors import AuthenticationError
 
 
 def loginUser(data: dict) -> dict:
+    email = data.get("email")
+    password = data.get("password")
+    if not isinstance(email, str) or not email.strip():
+        raise AuthenticationError("Invalid credentials")
+    if not isinstance(password, str) or not password.strip():
+        raise AuthenticationError("Invalid credentials")
+
     with Session() as session:
-        user = session.query(User).filter_by(email=data["email"]).one_or_none()
-        if user is None or not verifyPassword(data["password"], user.password_hash):
+        user = session.query(User).filter_by(email=email.strip()).one_or_none()
+        if user is None or not verifyPassword(password, user.password_hash):
             raise AuthenticationError("Invalid credentials")
 
         expires_in = int(os.getenv("JWT_EXPIRATION_MINUTES", "60"))

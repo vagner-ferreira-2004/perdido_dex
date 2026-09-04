@@ -1,8 +1,8 @@
 from flask import g, jsonify, request
 from pydantic import ValidationError
 
-from services import changePassword, deleteMe, getMe, updateMe
-from services.errors import ServiceError
+from errors import ServiceError
+from services.User import changePassword, getMe, updateMe
 from validators.RegisterSchema import ChangePasswordSchema
 from validators.UpdateUserSchema import UpdateUserSchema
 
@@ -28,14 +28,6 @@ def updateMeController():
         return jsonify(updateMe(g.user_id, data.model_dump(exclude_none=True))), 200
     except ValidationError as error:
         return _validationError(error)
-    except ServiceError as error:
-        return _serviceError(error)
-
-
-def deleteMeController():
-    try:
-        deleteMe(g.user_id)
-        return "", 204
     except ServiceError as error:
         return _serviceError(error)
 

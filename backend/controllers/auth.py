@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
-from services import loginUser, registerUser
-from services.errors import ServiceError
+from errors import ServiceError
+from services.Session import loginUser, registerUser
 from validators.RegisterSchema import LoginSchema, RegisterSchema
 
 
