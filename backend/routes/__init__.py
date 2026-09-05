@@ -1,6 +1,9 @@
 from flask import Flask
 
+from routes.auth import auth_bp
+from routes.user import user_bp
+
 
 def registerRoutes(app: Flask) -> None:
-    """Registra os Blueprints da aplicação quando as rotas forem adicionadas."""
-    return None
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(user_bp)
